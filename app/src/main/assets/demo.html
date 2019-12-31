@@ -1,0 +1,130 @@
+<html xmlns:white-space="http://www.w3.org/1999/xhtml">
+<head>
+    <meta content="text/html; charset=utf-8" http-equiv="content-type">
+    <!-- 网页适配手机页面-->
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <title>
+        js调用java
+    </title>
+</head>
+
+<body bgcolor="#f0ffff">
+<div>
+    <p id="show" style="background-color:white">
+    </p>
+    <pre id="init">
+    </pre>
+    <p>
+        <input type="text" id="text1" value="username"/>
+    </p>
+    <p>
+        <input type="text" id="text2" value="address"/>
+    </p>
+    <p>
+        <input type="button" id="enter" value="无需分配handle方法名（默认的），直接发消息给native"
+               onclick="jsToNativeDefault();"
+        />
+    </p>
+    <p>
+        <input type="button" id="enter1" value="通过submitFromWeb的handle方法名，调用native的同名方法"
+               onclick="jsToNativeCustom();"
+        />
+    </p>
+    <p>
+        <input type="button" id="enter2" value="显示html" onclick="testDiv();"/>
+    </p>
+    <p>
+        <input type="file" value="默认为type的input输入框，手机上没什么反应，在pc端会自动打开选择文件的窗口，点击文件会将文件名输入（很有趣不删～）"/>
+    </p>
+    <!--虽然这个标签被弃用了，但是它能展示出html下的代码，替换它的pre不行-->
+    <xmp id='showHtml' style='background-color:white'/>
+</div>
+</body>
+<script>
+
+
+    // js发送native默认的消息
+    function jsToNativeDefault() {
+        var str1 = document.getElementById("text1").value;
+        var str2 = document.getElementById("text2").value;
+
+        //send message to native
+        var data = {id: 1, content: "通过js页面点击，调用默认方法，发送该信息到手机端"};
+        window.WebViewJavascriptBridge.send(
+            data
+            , function (responseData) {
+                document.getElementById("show").innerHTML = "发消息给native，并收到了native的反馈如下\n" + responseData
+            }
+        );
+
+    }
+
+    // js发送native自定义名字的消息
+    function jsToNativeCustom() {
+        var str1 = document.getElementById("text1").value;
+        var str2 = document.getElementById("text2").value;
+
+        //call native method
+        window.WebViewJavascriptBridge.callHandler(
+            'submitFromWeb'
+            , {'param': '通过js页面点击，调用submitFromWeb方法，发送该信息到手机端'}
+            , function (responseData) {
+                document.getElementById("show").innerHTML = "发消息给native，并收到了native的反馈如下\n" + responseData
+            }
+        );
+    }
+
+    // 将html标签下的所有代码贴入xmp标签里
+    function testDiv() {
+        document.getElementById("showHtml").innerHTML = document.getElementsByTagName("html")[0].innerHTML;
+    }
+
+    // 设置向native发送的回调
+    function connectWebViewJavascriptBridge(callback) {
+        if (window.WebViewJavascriptBridge) {
+            callback(WebViewJavascriptBridge)
+        } else {
+            document.addEventListener(
+                'WebViewJavascriptBridgeReady'
+                , function () {
+                    callback(WebViewJavascriptBridge)
+                },
+                false
+            );
+        }
+    }
+
+    // 获取native发送的消息
+    connectWebViewJavascriptBridge(function (bridge) {
+        bridge.init(function (message, responseCallback) {
+            alert(message);
+            document.getElementById("show").innerHTML = ("native通过默认方法给js发来的信息如下\n" + message);
+            var data = {
+                'JS Responds': 'js已经收到默认方法发送来的消息，native请知悉!'
+            };
+
+            if (responseCallback) {
+                responseCallback(data);
+            }
+        });
+
+        bridge.registerHandler("functionInJs", function (data, responseCallback) {
+            alert(data); // typeof data  是  string
+            document.getElementById("show").innerHTML = ("native通过functionInJs方法给js发来的信息如下\n" + data);
+            var str1 = JSON.parse(data);
+            document.getElementById("text1").value = str1.name;
+            document.getElementById("text2").value = str1.location.address;
+            if (responseCallback) {
+                var responseData = "js已经收到functionInJs方法发送来的消息，native请知悉!";
+                responseCallback(responseData);
+            }
+        });
+    })
+
+
+
+</script>
+
+</html>
+

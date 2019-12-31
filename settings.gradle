@@ -1,0 +1,2 @@
+include ':app'
+rootProject.name='js_native_contact_demo'
